@@ -49,9 +49,7 @@ init env data =
     { renderSettings = []
     , commonData = cd
     , layers =
-        [ Main.layer (MainInitData { components = comps }) envcd
-        , FrontLayer.layer (FrontInitData levelName) envcd
-        ]
+        []
     }
 
 

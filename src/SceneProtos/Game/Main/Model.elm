@@ -18,6 +18,7 @@ import Messenger.GeneralModel exposing (Matcher, Msg(..), MsgBase(..), unroll)
 import Messenger.Layer.Layer exposing (ConcreteLayer, Handler, LayerInit, LayerStorage, LayerUpdate, LayerUpdateRec, LayerView, genLayer, handleComponentMsgs)
 import Messenger.Layer.LayerExtra exposing (BasicUpdater, Distributor)
 import Messenger.Misc.RNG exposing (genRandomInt)
+import Messenger.Scene.Scene exposing (SceneOutputMsg(..))
 import SceneProtos.Game.Components.Bullet.Model as Bullet
 import SceneProtos.Game.Components.ComponentBase exposing (BaseData, ComponentMsg(..), ComponentTarget(..))
 import SceneProtos.Game.Components.Enemy.Init as EnemyInit
@@ -41,7 +42,7 @@ removeDead =
 -}
 genUID : List GameComponent -> Int
 genUID xs =
-    1 + (Maybe.withDefault 0 <| List.maximum (List.map (\x -> (unroll x).baseData.id) xs))
+    Maybe.withDefault 0 <| List.maximum (List.map (\x -> (unroll x).baseData.id) xs)
 
 
 {-| Remove OoB objects
@@ -60,7 +61,7 @@ removeOutOfBound =
 
 addEnemy : Env SceneCommonData UserData -> List GameComponent -> List GameComponent
 addEnemy env comps =
-    if List.any (\comp -> (unroll comp).matcher <| Type "Enemy") comps then
+    if True then
         comps
 
     else
@@ -70,8 +71,11 @@ addEnemy env comps =
 
             rangep =
                 fixp + (toFloat <| genRandomInt env.globalData.globalStartTime ( -50, 50 ))
+
+            newEnemyInitData =
+                EnemyInit.InitData 1 (-1 / 10) ( 1920, 150 * (3 - cos rangep) ) 120 30 200
         in
-        Enemy.component (EnemyInitMsg <| EnemyInit.InitData 1 (-1 / 10) ( 1920, 150 * (3 - cos rangep) ) 120 30 200) env :: comps
+        comps
 
 
 type alias Data =
@@ -80,7 +84,7 @@ type alias Data =
 
 
 init : LayerInit SceneCommonData UserData (LayerMsg SceneMsg) Data
-init env initMsg =
+init _ initMsg =
     case initMsg of
         MainInitData data ->
             Data data.components
@@ -130,12 +134,12 @@ handleComponentMsg env compmsg data =
 
 
 updateBasic : BasicUpdater Data SceneCommonData UserData LayerTarget (LayerMsg SceneMsg) SceneMsg
-updateBasic env evt data =
+updateBasic env _ data =
     ( { data | components = addEnemy env <| removeOutOfBound <| removeDead data.components }, [], ( env, False ) )
 
 
 collisionDistributor : Distributor Data SceneCommonData UserData LayerTarget (LayerMsg SceneMsg) SceneMsg (List ( ComponentTarget, ComponentMsg ))
-collisionDistributor env evt data =
+collisionDistributor env _ data =
     ( data, ( [], judgeCollision data.components ), env )
 
 
@@ -165,7 +169,7 @@ update env evt data =
 
 
 updaterec : LayerUpdateRec SceneCommonData UserData LayerTarget (LayerMsg SceneMsg) SceneMsg Data
-updaterec env msg data =
+updaterec env _ data =
     ( data, [], env )
 
 
@@ -183,7 +187,7 @@ view env data =
 
 
 matcher : Matcher Data LayerTarget
-matcher data tar =
+matcher _ tar =
     tar == "Main"
 
 

@@ -17,7 +17,6 @@ import Messenger.Render.Sprite exposing (renderSprite)
 import SceneProtos.Game.Components.Bullet.Init exposing (CreateInitData)
 import SceneProtos.Game.Components.ComponentBase exposing (BaseData, ComponentMsg(..), ComponentTarget(..), emptyBaseData)
 import SceneProtos.Game.SceneBase exposing (SceneCommonData)
-import Set
 
 
 type alias Data =
@@ -26,17 +25,8 @@ type alias Data =
     }
 
 
-moveShip : BaseData -> Int -> BaseData
-moveShip d dt =
-    let
-        ( x, y ) =
-            d.position
-    in
-    { d | position = ( x, y + d.velocity * toFloat dt ) }
-
-
 init : ComponentInit SceneCommonData UserData ComponentMsg Data BaseData
-init env initMsg =
+init _ initMsg =
     case initMsg of
         ShipInitMsg msg ->
             ( { interval = msg.bulletInterval, timer = 15 }
@@ -53,70 +43,77 @@ init env initMsg =
             ( { interval = 0, timer = 15 }, emptyBaseData )
 
 
-update : ComponentUpdate SceneCommonData Data UserData SceneMsg ComponentTarget ComponentMsg BaseData
-update env evnt data basedata =
-    if basedata.alive then
-        case evnt of
+update e n d b =
+    let
+        moveShip pos vel =
+            let
+                ( x, y ) =
+                    pos
+            in
+            ( x, y + vel )
+    in
+    if b.alive then
+        let
+            v =
+                1 / 4
+
+            vModify =
+                max (3 / 2) (toFloat e.commonData.score * 1 / 60)
+        in
+        case n of
             Tick dt ->
-                if data.timer >= data.interval then
-                    let
-                        ( x, y ) =
-                            basedata.position
-                    in
-                    -- Generate a new bullet
-                    ( ( { data | timer = 0 }, moveShip basedata dt ), [ Parent <| OtherMsg <| NewBulletMsg (CreateInitData 1 ( x + 170, y + 20 ) Color.blue) ], ( env, False ) )
+                if d.timer == d.interval then
+                    ( ( { d | timer = 0 }, b ), [ Parent (OtherMsg (NewBulletMsg (CreateInitData 1 ( Tuple.first b.position + 170, Tuple.second b.position + 20 ) Color.blue))) ], ( e, False ) )
 
                 else
-                    ( ( { data | timer = data.timer + dt }, moveShip basedata dt ), [], ( env, False ) )
+                    ( ( { d | timer = d.timer + dt }, b ), [], ( e, False ) )
 
             KeyDown key ->
-                let
-                    v =
-                        1 / 4
+                case key of
+                    40 ->
+                        ( ( d, { b | velocity = v + vModify } ), [], ( e, False ) )
 
-                    vModify =
-                        toFloat env.commonData.score * 1 / 60 |> max (3 / 2)
-                in
-                if key == arrowDown then
-                    ( ( data, { basedata | velocity = v + vModify } ), [], ( env, False ) )
+                    38 ->
+                        ( ( d, { b | velocity = -v - vModify } ), [], ( e, False ) )
 
-                else if key == arrowUp then
-                    ( ( data, { basedata | velocity = -v - vModify } ), [], ( env, False ) )
-
-                else
-                    ( ( data, basedata ), [], ( env, False ) )
+                    _ ->
+                        ( ( d, b ), [], ( e, False ) )
 
             KeyUp key ->
-                if (key == arrowDown || key == arrowUp) && Set.isEmpty env.globalData.pressedKeys then
-                    ( ( data, { basedata | velocity = 0 } ), [], ( env, False ) )
+                case key of
+                    40 ->
+                        ( ( d, { b | velocity = 0 } ), [], ( e, False ) )
 
-                else
-                    ( ( data, basedata ), [], ( env, False ) )
+                    38 ->
+                        ( ( d, { b | velocity = 0 } ), [], ( e, False ) )
+
+                    _ ->
+                        ( ( d, b ), [], ( e, False ) )
 
             _ ->
-                ( ( data, basedata ), [], ( env, False ) )
+                ( ( d, b ), [], ( e, False ) )
 
     else
-        ( ( data, basedata ), [], ( env, False ) )
+        ( ( d, b ), [], ( e, False ) )
 
 
 updaterec : ComponentUpdateRec SceneCommonData Data UserData SceneMsg ComponentTarget ComponentMsg BaseData
 updaterec env msg data basedata =
     case msg of
         CollisionMsg _ ->
-            ( ( data, { basedata | alive = False } ), [ Parent <| OtherMsg <| GameOverMsg ], env )
+            ( ( data, basedata ), [], env )
 
         _ ->
             ( ( data, basedata ), [], env )
 
 
 view : ComponentView SceneCommonData UserData Data BaseData
-view env data basedata =
-    ( renderSprite env.globalData [] basedata.position basedata.collisionBox "ship", 0 )
+view { globalData } _ basedata =
+    ( renderSprite globalData.internalData [] basedata.position basedata.collisionBox "ship", 0 )
 
 
 matcher : ComponentMatcher Data BaseData ComponentTarget
-matcher data basedata tar =
+matcher _ basedata tar =
     tar == Type basedata.ty || tar == Id basedata.id
 
 

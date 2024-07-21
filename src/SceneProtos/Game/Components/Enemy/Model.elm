@@ -27,7 +27,7 @@ type alias Data =
 
 
 init : ComponentInit SceneCommonData UserData ComponentMsg Data BaseData
-init env initMsg =
+init _ initMsg =
     case initMsg of
         EnemyInitMsg msg ->
             ( { interval = msg.bulletInterval, sinf = msg.sinF, sina = msg.sinA, timer = 15 }
@@ -56,17 +56,17 @@ update env evnt data basedata =
                     basedata.position
 
                 newEnemy =
-                    { basedata | position = ( x + basedata.velocity * toFloat dt, y + velx * basedata.velocity * toFloat dt ) }
+                    { basedata | position = ( x + basedata.velocity, y + velx * basedata.velocity ) }
 
                 intModify =
                     max 100 <| floor <| toFloat env.commonData.score / 2
             in
-            if data.timer >= (data.interval - intModify) then
+            if data.timer == (data.interval - intModify) then
                 -- Generate a new bullet
-                ( ( { data | timer = 0 }, newEnemy ), [ Parent <| OtherMsg <| NewBulletMsg (CreateInitData -1 ( x - 60, y + 5 ) Color.red) ], ( env, False ) )
+                ( ( { data | timer = 0 }, basedata ), [ Parent <| OtherMsg <| NewBulletMsg (CreateInitData -1 ( x - 60, y + 5 ) Color.red) ], ( env, False ) )
 
             else
-                ( ( { data | timer = data.timer + dt }, newEnemy ), [], ( env, False ) )
+                ( ( { data | timer = data.timer + dt }, basedata ), [], ( env, False ) )
 
         _ ->
             ( ( data, basedata ), [], ( env, False ) )
@@ -87,12 +87,12 @@ updaterec env msg data basedata =
 
 
 view : ComponentView SceneCommonData UserData Data BaseData
-view env data basedata =
-    ( renderSprite env.globalData [] basedata.position basedata.collisionBox "enemy", 0 )
+view { globalData } _ basedata =
+    ( renderSprite globalData.internalData [] basedata.position basedata.collisionBox "enemy", 0 )
 
 
 matcher : ComponentMatcher Data BaseData ComponentTarget
-matcher data basedata tar =
+matcher _ basedata tar =
     tar == Type basedata.ty || tar == Id basedata.id
 
 

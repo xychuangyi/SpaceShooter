@@ -29,7 +29,7 @@ import Canvas exposing (Renderable)
 import Color
 import Lib.Base exposing (SceneMsg)
 import Lib.UserData exposing (UserData, decodeUserData, encodeUserData)
-import Messenger.Base exposing (UserViewGlobalData)
+import Messenger.Base exposing (InternalData, UserViewGlobalData)
 import Messenger.UserConfig exposing (TimeInterval(..), coloredBackground)
 
 
@@ -37,7 +37,7 @@ import Messenger.UserConfig exposing (TimeInterval(..), coloredBackground)
 -}
 initScene : String
 initScene =
-    "Level1"
+    "Home"
 
 
 {-| Initial scene message
@@ -51,7 +51,7 @@ initSceneMsg =
 -}
 virtualSize : { width : Float, height : Float }
 virtualSize =
-    { width = 1920, height = 1080 }
+    { width = 800, height = 600 }
 
 
 {-| Debug flag
@@ -63,7 +63,7 @@ debug =
 
 {-| Background of the scene.
 -}
-background : Messenger.Base.GlobalData userdata -> Renderable
+background : InternalData -> Renderable
 background =
     coloredBackground Color.lightBlue
 
